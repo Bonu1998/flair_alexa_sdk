@@ -1,4 +1,4 @@
-use log::{debug, error, info};
+use log::{error, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::{collections::HashMap, fmt};
@@ -61,7 +61,6 @@ impl Request {
     }
 
     pub fn get_session_id(&self) -> Result<String, String> {
-        info!("get_session_id invoked");
         match self.session.clone() {
             Some(session) => Ok(session.session_id.to_string()),
             None => Err(String::from("Session id not found")),
@@ -69,7 +68,6 @@ impl Request {
     }
 
     pub fn get_user_id(&self) -> Result<String, String> {
-        info!("get_user_id invoked");
         let mut user_id: Option<String> = None;
         if let Some(session) = self.session.clone() {
             if let Some(user) = session.user {
@@ -88,7 +86,6 @@ impl Request {
     }
 
     pub fn get_user_access_token(&self) -> Result<String, String> {
-        info!("get_user_id invoked");
         let mut token: Option<String> = None;
         if let Some(session) = self.session.clone() {
             if let Some(user) = session.user {
@@ -111,14 +108,11 @@ impl Request {
     }
 
     pub fn get_session_attributes(&self) -> Result<JsonValue, String> {
-        info!("get_session_attributes invoked");
         match self.session.clone() {
             Some(session) => match session.attributes {
-                Some(attributes) => {
-                    match attributes.get("session_data"){
-                        Some(data) => Ok(data.clone()),
-                        None => Err(format!("session_data not found in Session attributes")),
-                    }
+                Some(attributes) => match attributes.get("session_data") {
+                    Some(data) => Ok(data.clone()),
+                    None => Err(format!("session_data not found in Session attributes")),
                 },
                 None => Err(String::from("Session attributes not found")),
             },
@@ -127,7 +121,6 @@ impl Request {
     }
 
     pub fn get_intent_name(&self) -> Result<String, String> {
-        info!("get_intent_name invoked");
         if self.request_body.req_type == "IntentRequest".to_string() {
             match self.request_body.intent.clone() {
                 Some(intent) => Ok(intent.name),
@@ -139,46 +132,35 @@ impl Request {
     }
 
     pub fn get_locale(&self) -> String {
-        info!("get_locale invoked");
         self.request_body.locale.clone()
     }
 
     pub fn is_apl_supported(&self) -> bool {
-        info!("is_apl_supported invoked");
-        match self.context.system.clone() {
-            Some(system) => match system.device {
-                Some(device) => match device.supported_interfaces.apl_support {
-                    Some(_apl_support) => {
-                        debug!("APl Supported");
-                        return true;
-                    }
-                    None => debug!("APL not Supported"),
-                },
-                None => {
-                    debug!("device not found");
+        if let Some(system) = self.context.system.clone() {
+            if let Some(device) = system.device {
+                if let Some(_apl_support) = device.supported_interfaces.apl_support {
+                    return true;
                 }
-            },
-            None => {
-                debug!("System no found");
+            } else {
+                warn!("device not found");
             }
+        } else {
+            warn!("System no found");
         }
         return false;
     }
 
     pub fn is_audio_player_supported(&self) -> bool {
-        info!("is_audio_player_supported invoked");
-        match self.context.system.clone() {
-            Some(system) => match system.device {
-                Some(device) => match device.supported_interfaces.audio_player_support {
-                    Some(_apl_support) => {
-                        debug!("AudioPlayer Supported");
-                        return true;
-                    }
-                    None => debug!("AudioPlayer not Supported"),
-                },
-                None => error!("device not found"),
-            },
-            None => error!("System no found"),
+        if let Some(system) = self.context.system.clone() {
+            if let Some(device) = system.device {
+                if let Some(_apl_support) = device.supported_interfaces.audio_player_support {
+                    return true;
+                }
+            } else {
+                warn!("device not found")
+            }
+        } else {
+            warn!("System no found")
         }
         return false;
     }
